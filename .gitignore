@@ -1,0 +1,20 @@
+# 编译
+backend/target/
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 环境
+.env
+.env.local
+
+# 日志
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
