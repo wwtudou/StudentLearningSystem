@@ -1,0 +1,11 @@
+.card { background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:16px 20px; margin-bottom:16px; }
+.row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:8px; }
+input, select { padding:6px 8px; border:1px solid #ccc; border-radius:4px; }
+button { padding:6px 12px; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#2563eb; color:#fff; border-color:#2563eb; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { border:1px solid #e5e7eb; padding:8px; text-align:left; }
+th { background:#f9fafb; }
+.msg { padding:10px; margin-bottom:12px; background:#ecfdf5; color:#065f46; border-radius:4px; }
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:100; }
+.dialog { background:#fff; padding:20px; border-radius:8px; min-width:320px; display:flex; flex-direction:column; gap:8px; }
+.pager { margin-top:12px; display:flex; gap:12px; align-items:center; }

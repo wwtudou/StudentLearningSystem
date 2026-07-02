@@ -18,6 +18,6 @@ logging:
   level:
     com.sls: debug
 
-# 身份证号 AES 加密密钥（须 16 字节，请在 application-local.yml 中覆盖）
+# 身份证号 AES 加密密钥（须 16 字节，请在 application-local.yml 中覆盖；演示数据使用 SLMS-SECRET-KEY1）
 slms:
-  id-card-secret: CHANGE_ME_16BYTES
+  id-card-secret: SLMS-SECRET-KEY1

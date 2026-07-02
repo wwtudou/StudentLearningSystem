@@ -1,14 +1,46 @@
 // 前端路由配置
 import { createRouter, createWebHistory } from 'vue-router'
+import api from '../api'
 import HomeView from '../views/HomeView.vue'
+import LoginView from '../views/LoginView.vue'
 import StudentView from '../views/StudentView.vue'
+import OrgView from '../views/OrgView.vue'
+import DictView from '../views/DictView.vue'
+import TeacherView from '../views/TeacherView.vue'
+import CourseView from '../views/CourseView.vue'
+import RewardView from '../views/RewardView.vue'
+import EnrollmentView from '../views/EnrollmentView.vue'
+import GradeView from '../views/GradeView.vue'
+import ReportView from '../views/ReportView.vue'
+import UserView from '../views/UserView.vue'
 
 const routes = [
-  { path: '/', name: 'home', component: HomeView },           // 首页
-  { path: '/students', name: 'students', component: StudentView }  // 学生管理
+  { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
+  { path: '/', name: 'home', component: HomeView },
+  { path: '/students', name: 'students', component: StudentView },
+  { path: '/org', name: 'org', component: OrgView },
+  { path: '/dicts', name: 'dicts', component: DictView },
+  { path: '/teachers', name: 'teachers', component: TeacherView },
+  { path: '/courses', name: 'courses', component: CourseView },
+  { path: '/rewards', name: 'rewards', component: RewardView },
+  { path: '/enrollments', name: 'enrollments', component: EnrollmentView },
+  { path: '/grades', name: 'grades', component: GradeView },
+  { path: '/reports', name: 'reports', component: ReportView },
+  { path: '/users', name: 'users', component: UserView }
 ]
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes
 })
+
+router.beforeEach(async (to) => {
+  if (to.meta.public) return true
+  try {
+    const { data } = await api.get('/auth/me')
+    if (data.code === 0) return true
+  } catch (_) { /* 未登录 */ }
+  return '/login'
+})
+
+export default router
