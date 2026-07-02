@@ -1,15 +1,23 @@
+# 后端服务端口
 server:
   port: 8080
 
 spring:
   application:
     name: slms-backend
+  # 加载本地个人配置（可选）；文件不存在时不报错
+  config:
+    import: optional:classpath:application-local.yml
   datasource:
     url: jdbc:mysql://localhost:3306/slms?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
     username: root
-    password: root
+    password: your_password_here
     driver-class-name: com.mysql.cj.jdbc.Driver
 
 logging:
   level:
     com.sls: debug
+
+# 身份证号 AES 加密密钥（须 16 字节，请在 application-local.yml 中覆盖）
+slms:
+  id-card-secret: CHANGE_ME_16BYTES

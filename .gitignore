@@ -12,6 +12,9 @@ frontend/dist/
 .env
 .env.local
 
+# 本地个人配置（数据库密码、密钥等）
+backend/src/main/resources/application-local.yml
+
 # 日志
 *.log
 

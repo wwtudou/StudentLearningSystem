@@ -23,7 +23,7 @@ StudentLearningSystem/
 
 ## 数据库初始化
 
-1. 启动 MySQL，修改 `backend/src/main/resources/application.yml` 中的数据库账号密码（默认 root/root）
+1. 启动 MySQL，配置本机数据库连接（见下方「本地配置」）
 
 2. 执行建表脚本：
 
@@ -31,6 +31,22 @@ StudentLearningSystem/
 mysql -u root -p < db/schema.sql
 mysql -u root -p < db/init-data.sql
 ```
+
+## 本地配置（数据库密码）
+
+个人数据库密码**不要**写在 `application.yml` 里提交 Git。
+
+首次克隆项目后执行：
+
+```bash
+cd backend/src/main/resources
+copy application-local.yml.example application-local.yml   # Windows
+# cp application-local.yml.example application-local.yml   # Linux/macOS
+```
+
+然后编辑 `application-local.yml`，填入本机 MySQL 用户名和密码。该文件已在 `.gitignore` 中忽略。
+
+`application.yml` 仅保留公共配置，并通过 `optional:application-local.yml` 自动加载本地覆盖项。
 
 ## 启动后端
 
@@ -73,6 +89,20 @@ npm run dev
 | 审计日志 | audit_log |
 
 主键均为业务主键（学号、课程编号、联合主键等），与关系模式设计一致。
+
+## 学生管理 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/students | 分页查询（学号、姓名、学院、专业、学籍状态） |
+| GET | /api/students/{studentNo} | 详情 |
+| POST | /api/students | 新增 |
+| PUT | /api/students/{studentNo} | 修改（学号不可改） |
+| DELETE | /api/students/{studentNo} | 逻辑删除 |
+| GET | /api/students/options/colleges | 学院下拉 |
+| GET | /api/students/options/majors | 专业下拉 |
+
+前端入口：http://localhost:5173/students
 
 ## 默认账号
 

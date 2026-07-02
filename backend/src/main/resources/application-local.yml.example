@@ -1,0 +1,9 @@
+# 复制本文件为 application-local.yml，填入本机数据库账号密码
+# application-local.yml 已被 .gitignore 忽略，不会提交到 Git
+spring:
+  datasource:
+    username: root
+    password: your_password_here
+
+slms:
+  id-card-secret: SLMS-SECRET-KEY1
