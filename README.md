@@ -9,8 +9,13 @@ StudentLearningSystem/
 ├── backend/          # Spring Boot 后端
 ├── frontend/         # Vue3 + Vite 前端
 ├── db/               # 数据库脚本
-│   ├── schema.sql    # 建表（16 张表，业务主键）
-│   └── init-data.sql # 初始数据
+│   ├── schema.sql       # 建表、分区、索引
+│   ├── init-data.sql    # 演示数据
+│   ├── views.sql        # DB-Tech-03 视图
+│   ├── procedures.sql   # DB-Tech-01 存储过程
+│   ├── triggers.sql     # DB-Tech-02 触发器
+│   ├── grants.sql       # DB-Tech-08 用户权限
+│   └── install-all.sql  # 一键安装（SOURCE 串联）
 └── docs/             # 需求与设计文档
 ```
 
@@ -28,9 +33,16 @@ StudentLearningSystem/
 2. 执行建表脚本（**须运行整个 schema.sql 文件**，不要只选中部分语句）：
 
 ```bash
-mysql -u root -p < db/schema.sql
-mysql -u root -p < db/init-data.sql
+cd db
+mysql -u root -p < schema.sql
+mysql -u root -p < init-data.sql
+mysql -u root -p < views.sql
+mysql -u root -p < procedures.sql
+mysql -u root -p < triggers.sql
+mysql -u root -p < grants.sql
 ```
+
+重跑 `init-data.sql` 后请再执行 `triggers.sql`。
 
 若 `USE slms` 报 **1049 Unknown database**，说明 `slms` 库未创建成功，请用 root 执行，或先手动建库：
 
@@ -62,6 +74,17 @@ CREATE DATABASE slms DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 | dept_ee | `2dept` |
 | teacher01 / 02 / 03 | `1teacher` / `2teacher` / `3teacher` |
 | stu2022001 / stu2023001 | `1student` / `2student` |
+
+**角色与权限（应用层 RBAC，FR-08）**
+
+| 用户名 | 角色 | 典型能力 |
+|--------|------|----------|
+| admin | 系统管理员 | 全部功能 |
+| dept_cs / dept_ee | 院系管理员 | 本院学生/课程/奖惩；不可改字典、用户、高阶DB |
+| teacher01 | 教师 | 可查组织，**不可编辑院系**；可录入所教班成绩 |
+| stu2022001 | 学生 | **仅查本人**成绩/选课/奖惩；可选课退课，**不可改成绩** |
+
+> 学生账号通过 `sys_user.linked_no` 绑定学号（如 stu2022001 → 2022001001）；教师绑定工号（teacher01 → T001）。若库是旧版结构，请重新执行 `schema.sql` + `init-data.sql`，或手动 `ALTER TABLE sys_user ADD linked_no VARCHAR(20), ADD college_code VARCHAR(20)` 并更新演示数据。
 
 > 请勿在 SQL 中直接写 `1admin6` 这类明文作为 password 值；`password` 列存的是 BCrypt 哈希，见 init-data.sql 中的 `@pwd_xxx` 变量。
 
@@ -108,7 +131,23 @@ npm run dev
 | 选课 | /enrollments | FR-06 |
 | 成绩 | /grades | FR-06 |
 | 报表 | /reports | FR-07 |
+| 高阶DB | /db-tech | DB-Tech-02/04/06/07 演示 |
 | 用户权限 | /users | FR-08 |
+
+## 高阶数据库技术（DB-Tech-01 ~ 08）
+
+| 编号 | 技术 | 实现位置 |
+|------|------|----------|
+| 01 | 存储过程 | `db/procedures.sql`：`sp_enroll_course`、`sp_drop_course`、`sp_batch_save_grades`；后端选课/退课/批量成绩已 CALL |
+| 02 | 触发器 | `db/triggers.sql`：选课人数同步、成绩变更日志、禁止手改 enrolled_count |
+| 03 | 视图 | `db/views.sql`：`v_student_grade_summary`、`v_student_public` |
+| 04 | 索引优化 | `db/schema.sql` 索引 + `/db-tech` EXPLAIN 演示 |
+| 05 | 事务并发 | 存储过程内 `FOR UPDATE` + 后端死锁重试 |
+| 06 | 窗口函数 | `/db-tech` 专业排名、累计学分 |
+| 07 | 分区表 | `audit_log` 按 academic_year 分区（`grade` 保留外键故不分区）；EXPLAIN 演示 |
+| 08 | 用户权限 | `db/grants.sql`：`db_admin` / `db_dept` / `db_teacher` / `db_student` |
+
+MySQL 演示账号（库级）：密码 `123456dbadmin` / `123456dbdept` / `123456dbteacher` / `123456dbstudent`
 
 ## 启动后端
 

@@ -2,7 +2,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { fetchOrgTree, createCollege, updateCollege, createMajor, updateMajor } from '../api/org'
+import { useAuth } from '../composables/useAuth'
 
+const { writeAllowed } = useAuth()
+const canEditOrg = writeAllowed('org')
 const tree = ref([])
 const msg = ref('')
 const collegeForm = ref({ collegeCode: '', collegeName: '' })
@@ -47,7 +50,7 @@ onMounted(load)
 <template>
   <div>
     <p v-if="msg" class="msg">{{ msg }}</p>
-    <section class="card">
+    <section v-if="canEditOrg" class="card">
       <h2>新增学院</h2>
       <div class="row">
         <input v-model="collegeForm.collegeCode" placeholder="学院编号" />
@@ -55,7 +58,7 @@ onMounted(load)
         <button @click="addCollege">新增</button>
       </div>
     </section>
-    <section class="card">
+    <section v-if="canEditOrg" class="card">
       <h2>新增专业</h2>
       <div class="row">
         <input v-model="majorForm.majorCode" placeholder="专业编号" />
@@ -72,12 +75,12 @@ onMounted(load)
         <div class="row">
           <strong>{{ c.collegeCode }} - {{ c.collegeName }}</strong>
           <span class="tag">{{ c.status }}</span>
-          <button @click="editCollege = { ...c }">编辑</button>
+          <button v-if="canEditOrg" @click="editCollege = { ...c }">编辑</button>
         </div>
         <ul>
           <li v-for="m in c.majors" :key="m.majorCode">
             {{ m.majorCode }} - {{ m.majorName }} ({{ m.status }})
-            <button @click="editMajor = { ...m }">编辑</button>
+            <button v-if="canEditOrg" @click="editMajor = { ...m }">编辑</button>
           </li>
         </ul>
       </div>

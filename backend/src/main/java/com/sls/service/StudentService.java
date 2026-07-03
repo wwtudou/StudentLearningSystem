@@ -5,6 +5,7 @@ import com.sls.dto.PageResult;
 import com.sls.dto.StudentRequest;
 import com.sls.dto.StudentVO;
 import com.sls.repository.StudentRepository;
+import com.sls.security.AccessScope;
 import com.sls.util.IdCardUtil;
 import org.springframework.stereotype.Service;
 
@@ -21,16 +22,20 @@ public class StudentService {
 
     private final StudentRepository studentRepository;
     private final IdCardUtil idCardUtil;
+    private final AccessScope accessScope;
 
-    public StudentService(StudentRepository studentRepository, IdCardUtil idCardUtil) {
+    public StudentService(StudentRepository studentRepository, IdCardUtil idCardUtil, AccessScope accessScope) {
         this.studentRepository = studentRepository;
         this.idCardUtil = idCardUtil;
+        this.accessScope = accessScope;
     }
 
     /** 分页查询，并为每条记录填充脱敏身份证 */
     public PageResult<StudentVO> page(String studentNo, String name, String collegeCode,
                                       String majorCode, String studentStatus,
                                       int page, int pageSize) {
+        studentNo = accessScope.resolveStudentNoFilter(studentNo);
+        collegeCode = accessScope.resolveCollegeFilter(collegeCode);
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 10;
         int offset = (page - 1) * pageSize;
@@ -43,6 +48,7 @@ public class StudentService {
 
     /** 按学号查询详情 */
     public StudentVO getByStudentNo(String studentNo) {
+        accessScope.assertStudentAccess(studentNo);
         StudentVO vo = studentRepository.findByStudentNo(studentNo);
         if (vo == null) {
             throw new BusinessException("学生不存在");
@@ -54,6 +60,7 @@ public class StudentService {
     /** 新增学生 */
     public void create(StudentRequest req) {
         validateRequest(req, true);
+        accessScope.assertCollegeScope(req.getCollegeCode());
         if (studentRepository.existsByStudentNo(req.getStudentNo())) {
             throw new BusinessException("学号已存在");
         }
@@ -74,10 +81,12 @@ public class StudentService {
 
     /** 修改学生；身份证留空则保持原值 */
     public void update(String studentNo, StudentRequest req) {
+        accessScope.assertStudentAccess(studentNo);
         if (studentRepository.findByStudentNo(studentNo) == null) {
             throw new BusinessException("学生不存在");
         }
         validateRequest(req, false);
+        accessScope.assertCollegeScope(req.getCollegeCode());
         byte[] enc;
         if (req.getIdCard() != null && !req.getIdCard().isBlank()) {
             idCardUtil.validate(req.getIdCard());
@@ -103,6 +112,7 @@ public class StudentService {
 
     /** 逻辑删除；有选课记录则不允许删除 */
     public void delete(String studentNo) {
+        accessScope.assertStudentAccess(studentNo);
         if (studentRepository.findByStudentNo(studentNo) == null) {
             throw new BusinessException("学生不存在");
         }

@@ -57,6 +57,12 @@ public class OfferingRepository {
         return list.isEmpty() ? null : list.get(0);
     }
 
+    /** 教师本人授课的开课计划列表 */
+    public List<OfferingVO> listByTeacherNo(String teacherNo) {
+        return jdbc.query(BASE_SELECT + " WHERE o.teacher_no=? ORDER BY o.semester_code DESC, o.offering_no",
+                (rs, rowNum) -> mapRow(rs), teacherNo);
+    }
+
     /** 行锁查询开课计划 */
     public Map<String, Object> findForUpdate(String offeringNo) {
         List<Map<String, Object>> list = jdbc.queryForList(
@@ -138,5 +144,13 @@ public class OfferingRepository {
             params.add(status);
         }
         return params;
+    }
+
+    /** 查询开课计划授课教师工号 */
+    public String findTeacherNo(String offeringNo) {
+        List<String> list = jdbc.query(
+                "SELECT teacher_no FROM course_offering WHERE offering_no=?",
+                (rs, rowNum) -> rs.getString("teacher_no"), offeringNo);
+        return list.isEmpty() ? null : list.get(0);
     }
 }

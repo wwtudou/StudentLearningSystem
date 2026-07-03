@@ -2,7 +2,9 @@ package com.sls.common;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
@@ -16,6 +18,13 @@ public class GlobalExceptionHandler {
     /** 处理业务异常，返回具体错误信息 */
     @ExceptionHandler(BusinessException.class)
     public ApiResponse<Void> handleBusiness(BusinessException e) {
+        return ApiResponse.fail(e.getMessage());
+    }
+
+    /** 无权限（服务层抛出时） */
+    @ExceptionHandler(ForbiddenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiResponse<Void> handleForbidden(ForbiddenException e) {
         return ApiResponse.fail(e.getMessage());
     }
 

@@ -23,7 +23,7 @@ public class UserRepository {
 
     public SessionUser findSessionUser(String username) {
         List<SessionUser> users = jdbc.query(
-                "SELECT username, real_name, status FROM sys_user WHERE username = ?",
+                "SELECT username, real_name, status, linked_no, college_code FROM sys_user WHERE username = ?",
                 (rs, rowNum) -> {
                     if (!"启用".equals(rs.getString("status"))) {
                         return null;
@@ -31,6 +31,8 @@ public class UserRepository {
                     SessionUser su = new SessionUser();
                     su.setUsername(rs.getString("username"));
                     su.setRealName(rs.getString("real_name"));
+                    su.setLinkedNo(rs.getString("linked_no"));
+                    su.setCollegeCode(rs.getString("college_code"));
                     return su;
                 }, username);
         SessionUser user = users.stream().filter(u -> u != null).findFirst().orElse(null);

@@ -5,6 +5,7 @@ import com.sls.dto.PageResult;
 import com.sls.dto.RewardPunishmentVO;
 import com.sls.repository.RewardPunishmentRepository;
 import com.sls.repository.StudentRepository;
+import com.sls.security.AccessScope;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,14 +23,19 @@ public class RewardPunishmentService {
 
     private final RewardPunishmentRepository repository;
     private final StudentRepository studentRepository;
+    private final AccessScope accessScope;
 
-    public RewardPunishmentService(RewardPunishmentRepository repository, StudentRepository studentRepository) {
+    public RewardPunishmentService(RewardPunishmentRepository repository,
+                                   StudentRepository studentRepository,
+                                   AccessScope accessScope) {
         this.repository = repository;
         this.studentRepository = studentRepository;
+        this.accessScope = accessScope;
     }
 
     public PageResult<RewardPunishmentVO> page(String studentNo, String type, String level,
                                              String startDate, String endDate, int page, int pageSize) {
+        studentNo = accessScope.resolveStudentNoFilter(studentNo);
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 10;
         LocalDate start = parseDate(startDate);
@@ -42,6 +48,7 @@ public class RewardPunishmentService {
 
     public void create(String studentNo, String type, String level, String reason,
                        String occurDate, String recorder) {
+        accessScope.assertStudentAccess(studentNo);
         if (studentRepository.findByStudentNo(studentNo) == null) {
             throw new BusinessException("学生不存在");
         }

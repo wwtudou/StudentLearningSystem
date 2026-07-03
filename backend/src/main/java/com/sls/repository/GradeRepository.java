@@ -52,6 +52,30 @@ public class GradeRepository {
         return list.isEmpty() ? null : list.get(0);
     }
 
+    /** 某开课计划选课学生名册（含未录入成绩者） */
+    public List<GradeVO> findRosterByOffering(String offeringNo) {
+        String sql = """
+                SELECT e.student_no, s.name AS student_name, e.offering_no, c.course_name,
+                       sem.semester_name, g.total_score, g.exam_type, IFNULL(g.locked, 0) AS locked,
+                       g.academic_year
+                FROM enrollment e
+                JOIN student s ON e.student_no = s.student_no
+                JOIN course_offering o ON e.offering_no = o.offering_no
+                JOIN course c ON o.course_code = c.course_code
+                JOIN semester sem ON o.semester_code = sem.semester_code
+                LEFT JOIN grade g ON g.student_no = e.student_no AND g.offering_no = e.offering_no
+                WHERE e.offering_no = ?
+                ORDER BY e.student_no
+                """;
+        return jdbc.query(sql, (rs, rowNum) -> {
+            GradeVO vo = mapRow(rs);
+            if (vo.getExamType() == null) {
+                vo.setExamType("正常");
+            }
+            return vo;
+        }, offeringNo);
+    }
+
     public boolean exists(String studentNo, String offeringNo) {
         Long c = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM grade WHERE student_no=? AND offering_no=?",
@@ -99,7 +123,10 @@ public class GradeRepository {
         vo.setTotalScore(rs.getBigDecimal("total_score"));
         vo.setExamType(rs.getString("exam_type"));
         vo.setLocked(rs.getInt("locked") == 1);
-        vo.setAcademicYear(rs.getInt("academic_year"));
+        int year = rs.getInt("academic_year");
+        if (!rs.wasNull()) {
+            vo.setAcademicYear(year);
+        }
         return vo;
     }
 

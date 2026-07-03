@@ -80,6 +80,8 @@ CREATE TABLE sys_user (
   password      VARCHAR(255) NOT NULL COMMENT '密码（哈希存储）',
   real_name     VARCHAR(50)  NOT NULL COMMENT '真实姓名',
   status        VARCHAR(10)  NOT NULL DEFAULT '启用' COMMENT '状态：启用/停用',
+  linked_no     VARCHAR(20)  NULL COMMENT '关联学号或工号（学生/教师账号）',
+  college_code  VARCHAR(20)  NULL COMMENT '院系管理员所属学院',
   PRIMARY KEY (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统用户';
 
@@ -166,11 +168,14 @@ CREATE TABLE enrollment (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='选课';
 
 -- ------------------------------------------------------------
--- 12. 成绩（与选课 1:1）
+-- 12. 成绩（与选课 1:1；保留外键，不分区——MySQL 分区表不支持外键）
+-- 分区演示见 audit_log（DB-Tech-07）
 -- ------------------------------------------------------------
 CREATE TABLE grade (
   student_no    VARCHAR(20)   NOT NULL COMMENT '学号',
   offering_no   VARCHAR(30)   NOT NULL COMMENT '计划编号',
+  usual_score   DECIMAL(5, 2) NULL COMMENT '平时成绩',
+  final_score   DECIMAL(5, 2) NULL COMMENT '期末成绩',
   total_score   DECIMAL(5, 2) NULL COMMENT '总评成绩',
   exam_type     VARCHAR(10)   NOT NULL DEFAULT '正常' COMMENT '考试类型：正常/补考/重修',
   locked        TINYINT       NOT NULL DEFAULT 0 COMMENT '是否锁定：0否 1是',
@@ -178,8 +183,24 @@ CREATE TABLE grade (
   PRIMARY KEY (student_no, offering_no),
   CONSTRAINT fk_grade_enrollment
     FOREIGN KEY (student_no, offering_no) REFERENCES enrollment (student_no, offering_no),
+  CONSTRAINT chk_grade_usual CHECK (usual_score IS NULL OR (usual_score >= 0 AND usual_score <= 100)),
+  CONSTRAINT chk_grade_final CHECK (final_score IS NULL OR (final_score >= 0 AND final_score <= 100)),
   CONSTRAINT chk_grade_score CHECK (total_score IS NULL OR (total_score >= 0 AND total_score <= 100))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='成绩';
+
+-- ------------------------------------------------------------
+-- 12b. 成绩变更日志（DB-Tech-02 触发器写入）
+-- ------------------------------------------------------------
+CREATE TABLE grade_change_log (
+  log_no      BIGINT       NOT NULL AUTO_INCREMENT COMMENT '日志编号',
+  student_no  VARCHAR(20)  NOT NULL COMMENT '学号',
+  offering_no VARCHAR(30)  NOT NULL COMMENT '计划编号',
+  old_value   JSON         NULL COMMENT '旧值',
+  new_value   JSON         NULL COMMENT '新值',
+  changed_by  VARCHAR(50)  NOT NULL DEFAULT 'system' COMMENT '修改者',
+  changed_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+  PRIMARY KEY (log_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='成绩变更日志';
 
 -- ------------------------------------------------------------
 -- 13. 奖惩
@@ -242,9 +263,14 @@ PARTITION BY RANGE (academic_year) (
 );
 
 -- ------------------------------------------------------------
--- 索引（高频查询）
+-- 索引（高频查询，DB-Tech-04）
 -- ------------------------------------------------------------
 CREATE INDEX idx_student_college_major ON student (college_code, major_code, student_status);
+CREATE INDEX idx_student_status_deleted ON student (student_status, deleted);
 CREATE INDEX idx_enrollment_offering    ON enrollment (offering_no);
-CREATE INDEX idx_grade_academic_year  ON grade (academic_year);
+CREATE INDEX idx_enrollment_student     ON enrollment (student_no);
+CREATE INDEX idx_grade_offering         ON grade (offering_no);
+CREATE INDEX idx_grade_academic_year    ON grade (academic_year);
 CREATE INDEX idx_offering_semester      ON course_offering (semester_code, status);
+CREATE INDEX idx_offering_teacher       ON course_offering (teacher_no);
+CREATE FULLTEXT INDEX ft_course_name    ON course (course_name);

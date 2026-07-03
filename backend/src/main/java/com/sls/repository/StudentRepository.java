@@ -137,6 +137,14 @@ public class StudentRepository {
         jdbc.update("UPDATE student SET deleted=1 WHERE student_no=? AND deleted=0", studentNo);
     }
 
+    /** 查询学生所属学院（权限范围校验） */
+    public String findCollegeCode(String studentNo) {
+        List<String> list = jdbc.query(
+                "SELECT college_code FROM student WHERE student_no=? AND deleted=0",
+                (rs, rowNum) -> rs.getString("college_code"), studentNo);
+        return list.isEmpty() ? null : list.get(0);
+    }
+
     /** 校验专业是否属于指定学院 */
     public boolean majorBelongsToCollege(String majorCode, String collegeCode) {
         String sql = "SELECT COUNT(*) FROM major WHERE major_code=? AND college_code=?";

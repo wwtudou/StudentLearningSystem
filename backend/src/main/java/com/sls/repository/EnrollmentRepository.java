@@ -22,7 +22,8 @@ public class EnrollmentRepository {
 
     private static final String BASE_SELECT = """
             SELECT e.student_no, s.name AS student_name, e.offering_no, c.course_name,
-                   sem.semester_name, t.name AS teacher_name, e.enroll_time, e.is_retake
+                   sem.semester_name, t.name AS teacher_name, e.enroll_time, e.is_retake,
+                   o.status AS offering_status
             FROM enrollment e
             JOIN student s ON e.student_no = s.student_no
             JOIN course_offering o ON e.offering_no = o.offering_no
@@ -65,6 +66,20 @@ public class EnrollmentRepository {
         jdbc.update("DELETE FROM enrollment WHERE student_no=? AND offering_no=?", studentNo, offeringNo);
     }
 
+    public void deleteGrade(String studentNo, String offeringNo) {
+        jdbc.update("DELETE FROM grade WHERE student_no=? AND offering_no=?", studentNo, offeringNo);
+    }
+
+    /** 同学期上课时间是否冲突 */
+    public boolean hasScheduleConflict(String studentNo, String semesterCode, String schedule) {
+        Long c = jdbc.queryForObject("""
+                SELECT COUNT(*) FROM enrollment e
+                JOIN course_offering o ON e.offering_no = o.offering_no
+                WHERE e.student_no = ? AND o.semester_code = ? AND o.schedule = ?
+                """, Long.class, studentNo, semesterCode, schedule);
+        return c != null && c > 0;
+    }
+
     public String findStudentStatus(String studentNo) {
         List<String> list = jdbc.query(
                 "SELECT student_status FROM student WHERE student_no=? AND deleted=0",
@@ -82,6 +97,7 @@ public class EnrollmentRepository {
         vo.setTeacherName(rs.getString("teacher_name"));
         vo.setEnrollTime(rs.getTimestamp("enroll_time").toLocalDateTime().toString());
         vo.setRetake(rs.getInt("is_retake") == 1);
+        vo.setOfferingStatus(rs.getString("offering_status"));
         return vo;
     }
 

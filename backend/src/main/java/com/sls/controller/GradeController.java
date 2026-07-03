@@ -2,11 +2,13 @@ package com.sls.controller;
 
 import com.sls.common.ApiResponse;
 import com.sls.dto.GradeVO;
+import com.sls.dto.OfferingVO;
 import com.sls.dto.PageResult;
 import com.sls.service.GradeService;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,6 +31,18 @@ public class GradeController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize) {
         return ApiResponse.ok(gradeService.page(studentNo, offeringNo, page, pageSize));
+    }
+
+    /** 教师：本人授课的开课计划列表 */
+    @GetMapping("/my-offerings")
+    public ApiResponse<List<OfferingVO>> myOfferings() {
+        return ApiResponse.ok(gradeService.myOfferings());
+    }
+
+    /** 教师：某班学生名册（含成绩，未录入者为空） */
+    @GetMapping("/roster")
+    public ApiResponse<List<GradeVO>> roster(@RequestParam String offeringNo) {
+        return ApiResponse.ok(gradeService.roster(offeringNo));
     }
 
     @PostMapping
@@ -57,5 +71,14 @@ public class GradeController {
     public ApiResponse<Void> retake(@RequestBody Map<String, String> body) {
         gradeService.arrangeRetake(body.get("studentNo"), body.get("offeringNo"));
         return ApiResponse.ok("重修选课成功", null);
+    }
+
+    /** 批量保存成绩（存储过程） */
+    @PostMapping("/batch")
+    public ApiResponse<Map<String, Object>> batch(@RequestBody Map<String, Object> body) {
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> grades = (List<Map<String, Object>>) body.get("grades");
+        int count = gradeService.batchSave((String) body.get("offeringNo"), grades);
+        return ApiResponse.ok("批量保存成功", Map.of("count", count));
     }
 }

@@ -5,8 +5,10 @@ import {
   fetchStudents, createStudent, updateStudent, deleteStudent,
   fetchColleges, fetchMajors
 } from '../api/student'
+import { useAuth } from '../composables/useAuth'
 
-// 查询条件
+const { writeAllowed } = useAuth()
+const canEditStudent = writeAllowed('student')
 const query = reactive({
   studentNo: '',
   name: '',
@@ -226,7 +228,7 @@ onMounted(async () => {
       <div class="btns">
         <button @click="page=1; loadList()">查询</button>
         <button class="secondary" @click="resetQuery">重置</button>
-        <button class="primary" @click="openCreate">新增学生</button>
+        <button v-if="canEditStudent" class="primary" @click="openCreate">新增学生</button>
       </div>
     </section>
 
@@ -238,7 +240,7 @@ onMounted(async () => {
           <tr>
             <th>学号</th><th>姓名</th><th>学院</th><th>专业</th>
             <th>年龄</th><th>性别</th><th>身份证</th>
-            <th>入学年份</th><th>学籍状态</th><th>操作</th>
+            <th>入学年份</th><th>学籍状态</th><th v-if="canEditStudent">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -253,7 +255,7 @@ onMounted(async () => {
             <td>{{ row.idCardMasked }}</td>
             <td>{{ row.enrollYear }}</td>
             <td>{{ row.studentStatus }}</td>
-            <td class="actions">
+            <td v-if="canEditStudent" class="actions">
               <button @click="openEdit(row)">编辑</button>
               <button class="danger" @click="handleDelete(row)">删除</button>
             </td>

@@ -12,6 +12,8 @@ public class EnrollmentVO {
     private String teacherName;
     private String enrollTime;
     private boolean retake;
+    /** 开课计划状态：开放选课 / 选课结束 / 已结束 等 */
+    private String offeringStatus;
 
     public String getStudentNo() { return studentNo; }
     public void setStudentNo(String studentNo) { this.studentNo = studentNo; }
@@ -29,4 +31,6 @@ public class EnrollmentVO {
     public void setEnrollTime(String enrollTime) { this.enrollTime = enrollTime; }
     public boolean isRetake() { return retake; }
     public void setRetake(boolean retake) { this.retake = retake; }
+    public String getOfferingStatus() { return offeringStatus; }
+    public void setOfferingStatus(String offeringStatus) { this.offeringStatus = offeringStatus; }
 }
