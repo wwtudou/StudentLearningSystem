@@ -1,4 +1,4 @@
-<!-- 根布局：顶部导航 + 路由出口 -->
+﻿<!-- 根布局：顶部导航 + 路由出口 -->
 <script setup>
 import { computed, onMounted, watch } from 'vue'
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
