@@ -34,6 +34,7 @@ const genderOptions = ['男', '女']
 
 const currentYear = new Date().getFullYear()
 const yearOptions = Array.from({ length: currentYear - 2000 + 5 }, (_, i) => 2000 + i)
+const ageOptions = Array.from({ length: 36 }, (_, i) => 15 + i)
 
 // 新增/编辑弹窗
 const dialogVisible = ref(false)
@@ -316,7 +317,6 @@ onMounted(async () => {
               <option v-for="m in formMajors" :key="m.code" :value="m.code">{{ m.name }}</option>
             </select>
           </label>
-          <label>年龄 * <input v-model.number="form.age" type="number" /></label>
           <label>性别 *
             <select v-model="form.gender">
               <option v-for="g in genderOptions" :key="g" :value="g">{{ g }}</option>
@@ -325,14 +325,19 @@ onMounted(async () => {
           <label>身份证号 {{ isEdit ? '' : '*' }}
             <input v-model="form.idCard" :placeholder="isEdit ? '不修改请留空' : '18位'" />
           </label>
-          <label>入学年份 *
-            <select v-model.number="form.enrollYear">
-              <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
-            </select>
-          </label>
           <label>学籍状态 *
             <select v-model="form.studentStatus">
               <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
+            </select>
+          </label>
+          <label>年龄 *
+            <select v-model.number="form.age" size="1" @focus="$event.target.size=5" @blur="$event.target.size=1" @change="$event.target.size=1">
+              <option v-for="a in ageOptions" :key="a" :value="a">{{ a }}</option>
+            </select>
+          </label>
+          <label>入学年份 *
+            <select v-model.number="form.enrollYear" size="1" @focus="$event.target.size=5" @blur="$event.target.size=1" @change="$event.target.size=1">
+              <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
             </select>
           </label>
         </div>
