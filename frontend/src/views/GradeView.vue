@@ -20,6 +20,9 @@ const list = ref([])
 const total = ref(0)
 const page = ref(1)
 const query = ref({ studentNo: '', offeringNo: '' })
+/** 成绩编辑弹窗 */
+const editGradeDialogVisible = ref(false)
+const editGradeForm = ref({ studentNo: '', offeringNo: '', totalScore: null, examType: '正常' })
 
 /** 教师模式 */
 const myClasses = ref([])
@@ -165,6 +168,36 @@ async function doRetake(row) {
   else show(data.message, true)
 }
 
+function openGradeEdit(row) {
+  editGradeForm.value = {
+    studentNo: row.studentNo,
+    offeringNo: row.offeringNo,
+    totalScore: row.totalScore != null ? Number(row.totalScore) : null,
+    examType: row.examType || '正常'
+  }
+  editGradeDialogVisible.value = true
+}
+
+async function saveGradeEdit() {
+  try {
+    const { data } = await saveGrade({
+      studentNo: editGradeForm.value.studentNo,
+      offeringNo: editGradeForm.value.offeringNo,
+      totalScore: editGradeForm.value.totalScore,
+      examType: editGradeForm.value.examType
+    })
+    if (data.code === 0) {
+      show('成绩已更新')
+      editGradeDialogVisible.value = false
+      await loadList()
+    } else {
+      show(data.message, true)
+    }
+  } catch (e) {
+    show(e.response?.data?.message || '保存失败', true)
+  }
+}
+
 watch(selectedOfferingNo, () => {
   if (isTeacher.value) loadRoster()
 })
@@ -303,9 +336,12 @@ watch(
               <td>{{ row.totalScore ?? '—' }}</td>
               <td>{{ row.examType }}</td>
               <td>{{ row.locked ? '是' : '否' }}</td>
-              <td>
-                <button v-if="isStudent" @click="doRetake(row)">重修</button>
-              </td>
+             <td>
+               <button v-if="isStudent" @click="doRetake(row)">重修</button>
+                <template v-if="!isStudent">
+                  <button class="btn-sm" @click="openGradeEdit(row)">编辑</button>
+                </template>
+             </td>
             </tr>
           </tbody>
         </table>
@@ -317,6 +353,30 @@ watch(
       </section>
     </template>
   </div>
+    <!-- 成绩编辑弹窗 -->
+    <div v-if="editGradeDialogVisible" class="overlay" @click.self="editGradeDialogVisible=false">
+      <div class="dialog">
+        <h3>编辑成绩</h3>
+        <div class="edit-info">
+          <p>学号：{{ editGradeForm.studentNo }}</p>
+          <p>开课计划：{{ editGradeForm.offeringNo }}</p>
+        </div>
+        <label>总评成绩
+          <input v-model.number="editGradeForm.totalScore" type="number" min="0" max="100" class="edit-input" />
+        </label>
+        <label>考试类型
+          <select v-model="editGradeForm.examType" class="edit-input">
+            <option>正常</option>
+            <option>补考</option>
+            <option>重修</option>
+          </select>
+        </label>
+        <div class="btns">
+          <button class="primary" @click="saveGradeEdit">保存</button>
+          <button class="secondary" @click="editGradeDialogVisible=false">取消</button>
+        </div>
+      </div>
+    </div>
 </template>
 
 <style scoped>
@@ -341,6 +401,8 @@ watch(
 button.primary { background: #1d4ed8; border-color: #1d4ed8; }
 .score-input { width: 72px; padding: 4px 6px; }
 .btn-sm { padding: 4px 10px; font-size: 13px; }
+.edit-input { padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; }
+.edit-info p { margin: 4px 0; font-size: 14px; color: #555; }
 .msg.ok { background: #ecfdf5; color: #065f46; padding: 10px; border-radius: 4px; margin-bottom: 12px; }
 .msg.err { background: #fef2f2; color: #991b1b; padding: 10px; border-radius: 4px; margin-bottom: 12px; }
 </style>
