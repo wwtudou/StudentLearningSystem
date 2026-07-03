@@ -32,9 +32,15 @@ const formMajors = ref([])    // 表单区专业下拉
 const statusOptions = ['在读', '休学', '毕业', '退学']
 const genderOptions = ['男', '女']
 
+const currentYear = new Date().getFullYear()
+const yearOptions = Array.from({ length: currentYear - 2000 + 5 }, (_, i) => 2000 + i)
+
 // 新增/编辑弹窗
 const dialogVisible = ref(false)
 const isEdit = ref(false)
+// 对话框内消息
+const dialogMessage = ref('')
+const dialogMessageType = ref('ok')
 const form = reactive({
   studentNo: '',
   name: '',
@@ -51,6 +57,12 @@ const form = reactive({
 function showMsg(text, type = 'ok') {  message.value = text
   messageType.value = type
   setTimeout(() => { message.value = '' }, 3000)
+}
+
+/** 对话框内消息（不自动消失） */
+function showDialogMsg(text, type) {
+  dialogMessage.value = text
+  if (type) dialogMessageType.value = type
 }
 
 /** 加载学院下拉 */
@@ -109,6 +121,7 @@ function openCreate() {
     enrollYear: new Date().getFullYear(), studentStatus: '在读'
   })
   loadFormMajors('')
+  dialogMessage.value = ''
   dialogVisible.value = true
 }
 
@@ -127,11 +140,13 @@ function openEdit(row) {
     studentStatus: row.studentStatus
   })
   loadFormMajors(row.collegeCode)
+  dialogMessage.value = ''
   dialogVisible.value = true
 }
 
 /** 提交新增或修改 */
 async function submitForm() {
+  dialogMessage.value = ''
   try {
     const payload = { ...form }
     let res
@@ -143,14 +158,27 @@ async function submitForm() {
     }
     const { data } = res
     if (data.code === 0) {
-      showMsg(data.message || '操作成功')
-      dialogVisible.value = false
+      if (isEdit.value) {
+        dialogVisible.value = false
+        showMsg(data.message || '操作成功')
+      } else {
+        showDialogMsg(data.message || '操作成功', 'ok')
+        form.studentNo = ''
+        form.name = ''
+        form.collegeCode = ''
+        form.majorCode = ''
+        form.age = 18
+        form.gender = '男'
+        form.idCard = ''
+        form.enrollYear = new Date().getFullYear()
+        form.studentStatus = '在读'
+      }
       loadList()
     } else {
-      showMsg(data.message, 'err')
+      showDialogMsg(data.message)
     }
   } catch (e) {
-    showMsg('操作失败', 'err')
+    showDialogMsg('操作失败')
   }
 }
 
@@ -272,6 +300,7 @@ onMounted(async () => {
     <div v-if="dialogVisible" class="overlay" @click.self="dialogVisible=false">
       <div class="dialog">
         <h3>{{ isEdit ? '编辑学生' : '新增学生' }}</h3>
+        <div v-if="dialogMessage" :class="['dialog-msg', 'msg-' + dialogMessageType]">{{ dialogMessage }}</div>
         <div class="form-grid">
           <label>学号 * <input v-model="form.studentNo" :disabled="isEdit" /></label>
           <label>姓名 * <input v-model="form.name" /></label>
@@ -296,7 +325,11 @@ onMounted(async () => {
           <label>身份证号 {{ isEdit ? '' : '*' }}
             <input v-model="form.idCard" :placeholder="isEdit ? '不修改请留空' : '18位'" />
           </label>
-          <label>入学年份 * <input v-model.number="form.enrollYear" type="number" /></label>
+          <label>入学年份 *
+            <select v-model.number="form.enrollYear">
+              <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+            </select>
+          </label>
           <label>学籍状态 *
             <select v-model="form.studentStatus">
               <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
@@ -331,6 +364,9 @@ th { background:#f9fafb; }
 .pager { margin-top:12px; display:flex; align-items:center; gap:12px; }
 .msg { padding:10px; margin-bottom:12px; border-radius:4px; }
 .msg.ok { background:#ecfdf5; color:#065f46; }
+.dialog-msg { padding:10px; margin-bottom:12px; border-radius:4px; }
+.msg-ok { background:#ecfdf5; color:#065f46; }
+.msg-err { background:#fef2f2; color:#991b1b; }
 .msg.err { background:#fef2f2; color:#991b1b; }
 .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:100; }
 .dialog { background:#fff; padding:20px; border-radius:8px; width:520px; max-height:90vh; overflow:auto; }
