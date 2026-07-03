@@ -359,7 +359,6 @@ watch(
     <div v-if="editGradeDialogVisible" class="overlay" @click.self="editGradeDialogVisible=false">
       <div class="dialog">
         <h3>编辑成绩</h3>
-         <p v-if="dialogEditMsg" class="dialog-msg">{{ dialogEditMsg }}</p>  
         <div class="edit-info">
           <p>学号：{{ editGradeForm.studentNo }}</p>
           <p>开课计划：{{ editGradeForm.offeringNo }}</p>

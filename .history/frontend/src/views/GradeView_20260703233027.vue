@@ -180,7 +180,6 @@ function openGradeEdit(row) {
 }
 
 async function saveGradeEdit() {
-  dialogEditMsg.value = ''       // 新增：清空之前的消息
   try {
     const { data } = await saveGrade({
       studentNo: editGradeForm.value.studentNo,
@@ -189,14 +188,14 @@ async function saveGradeEdit() {
       examType: editGradeForm.value.examType
     })
     if (data.code === 0) {
-      dialogEditMsg.value = '成绩已更新'    // 改：show → dialogEditMsg.value
+      show('成绩已更新')
       editGradeDialogVisible.value = false
       await loadList()
     } else {
-      dialogEditMsg.value = data.message    // 改：show → dialogEditMsg.value
+      show(data.message, true)
     }
   } catch (e) {
-    dialogEditMsg.value = e.response?.data?.message || '保存失败'  // 改
+    show(e.response?.data?.message || '保存失败', true)
   }
 }
 
@@ -359,7 +358,6 @@ watch(
     <div v-if="editGradeDialogVisible" class="overlay" @click.self="editGradeDialogVisible=false">
       <div class="dialog">
         <h3>编辑成绩</h3>
-         <p v-if="dialogEditMsg" class="dialog-msg">{{ dialogEditMsg }}</p>  
         <div class="edit-info">
           <p>学号：{{ editGradeForm.studentNo }}</p>
           <p>开课计划：{{ editGradeForm.offeringNo }}</p>

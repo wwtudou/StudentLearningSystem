@@ -205,8 +205,8 @@ watch(() => user.value?.linkedNo, (no) => {
       <h2>{{ isStudent ? '我的已选课程' : '已选课程' }}</h2>
       <div v-if="!isStudent" class="row">
         
-        <input v-model="queryStudentNo" placeholder="输入学号查询" />
-       
+          <input v-model="queryStudentNo" placeholder="输入学号查询" />
+        </label>
         <button @click="searchEnrolled">查询</button>
         <button class="btn-secondary" @click="queryStudentNo = ''; searchEnrolled()">全部</button>
       </div>
