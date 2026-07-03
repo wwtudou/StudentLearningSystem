@@ -27,9 +27,14 @@ async function addCollege() {
 }
 
 async function saveCollege() {
-  const { data } = await updateCollege(editCollege.value.collegeCode, editCollege.value)
-  if (data.code === 0) { show('学院已更新'); editCollege.value = null; load() }
-  else show(data.message)
+  try {
+    const payload = { collegeName: editCollege.value.collegeName, status: editCollege.value.status }
+    const { data } = await updateCollege(editCollege.value.collegeCode, payload)
+    if (data.code === 0) { show('学院已更新'); editCollege.value = null; load() }
+    else show(data.message)
+  } catch (e) {
+    show('操作失败')
+  }
 }
 
 async function addMajor() {

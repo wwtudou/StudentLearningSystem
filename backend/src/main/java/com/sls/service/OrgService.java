@@ -44,6 +44,8 @@ public class OrgService {
         if (orgRepository.findCollege(code) == null) throw new BusinessException("学院不存在");
         validateStatus(status);
         orgRepository.updateCollege(code, name.trim(), status);
+        // \u7c7b\u8054\u66f4\u65b0\u9662\u7cfb\u4e0b\u6240\u6709\u4e13\u4e1a\u7684\u72b6\u6001
+        orgRepository.updateMajorsStatusByCollege(code, status);
     }
 
     public List<MajorVO> listMajors(String collegeCode) {

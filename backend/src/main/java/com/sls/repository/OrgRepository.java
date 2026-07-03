@@ -64,6 +64,10 @@ public class OrgRepository {
         jdbc.update("UPDATE college SET college_name=?, status=? WHERE college_code=?", name, status, code);
     }
 
+    public void updateMajorsStatusByCollege(String collegeCode, String status) {
+        jdbc.update("UPDATE major SET status=? WHERE college_code=?", status, collegeCode);
+    }
+
     public int countActiveStudentsByCollege(String collegeCode) {
         Long c = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM student WHERE college_code=? AND deleted=0 AND student_status='在读'",
