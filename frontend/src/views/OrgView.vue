@@ -1,4 +1,4 @@
-<!-- 院系专业管理 -->
+﻿<!-- 院系专业管理 -->
 <script setup>
 import { ref, onMounted } from 'vue'
 import { fetchOrgTree, createCollege, updateCollege, createMajor, updateMajor } from '../api/org'
@@ -111,4 +111,8 @@ onMounted(load)
 @import '../styles/common.css';
 .block { margin-bottom:12px; border-bottom:1px solid #eee; padding-bottom:8px; }
 .tag { font-size:12px; color:#666; margin-left:8px; }
+.block .row button, ul li button { padding:2px 8px; font-size:12px; margin-left:4px; min-width:unset; border-radius:4px; }
+.block .row { gap:4px; flex-wrap:wrap; }
+ul { padding-left:16px; margin:4px 0; list-style:none; }
+ul li { padding:3px 0; font-size:14px; display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
 </style>

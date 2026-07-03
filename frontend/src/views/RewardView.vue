@@ -1,4 +1,4 @@
-<!-- 奖惩管理 -->
+﻿<!-- 奖惩管理 -->
 <script setup>
 import { ref, onMounted } from 'vue'
 import { fetchRewards, createReward, updateReward, archiveReward } from '../api/reward'
@@ -82,4 +82,7 @@ onMounted(load)
   </div>
 </template>
 
-<style scoped>@import '../styles/common.css';</style>
+<style scoped>
+@import '../styles/common.css';
+table td button { padding:2px 10px; font-size:12px; min-width:unset; margin-right:4px; border-radius:4px; }
+</style>
