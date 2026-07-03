@@ -331,7 +331,7 @@ onMounted(async () => {
             </select>
           </label>
            <label>年龄 * <input v-model.number="form.age" type="number" /></label>
-          <label>入学年份 * <input v-model.number="form.enrollYear" type="number" /></label>
+            <label>入学年份 * <input v-model.number="form.enrollYear" type="number" /></label>
         </div>
         <div class="btns">
           <button class="primary" @click="submitForm">保存</button>

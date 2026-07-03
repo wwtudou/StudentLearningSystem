@@ -330,8 +330,16 @@ onMounted(async () => {
               <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
             </select>
           </label>
-           <label>年龄 * <input v-model.number="form.age" type="number" /></label>
-          <label>入学年份 * <input v-model.number="form.enrollYear" type="number" /></label>
+          <label>年龄 *
+            <select v-model.number="form.age" size="1" @focus="$event.target.size=5" @blur="$event.target.size=1" @change="$event.target.size=1">
+              <option v-for="a in ageOptions" :key="a" :value="a">{{ a }}</option>
+            </select>
+          </label>
+          <label>入学年份 *
+            <select v-model.number="form.enrollYear" size="1" @focus="$event.target.size=5" @blur="$event.target.size=1" @change="$event.target.size=1">
+              <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+            </select>
+          </label>
         </div>
         <div class="btns">
           <button class="primary" @click="submitForm">保存</button>

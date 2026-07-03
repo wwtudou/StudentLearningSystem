@@ -33,8 +33,8 @@ const statusOptions = ['在读', '休学', '毕业', '退学']
 const genderOptions = ['男', '女']
 
 const currentYear = new Date().getFullYear()
-//const yearOptions = Array.from({ length: currentYear - 2000 + 5 }, (_, i) => 2000 + i)
-//const ageOptions = Array.from({ length: 36 }, (_, i) => 15 + i)
+const yearOptions = Array.from({ length: currentYear - 2000 + 5 }, (_, i) => 2000 + i)
+const ageOptions = Array.from({ length: 36 }, (_, i) => 15 + i)
 
 // 新增/编辑弹窗
 const dialogVisible = ref(false)
@@ -330,8 +330,16 @@ onMounted(async () => {
               <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
             </select>
           </label>
-           <label>年龄 * <input v-model.number="form.age" type="number" /></label>
-          <label>入学年份 * <input v-model.number="form.enrollYear" type="number" /></label>
+          <label>年龄 *
+            <select v-model.number="form.age" size="1" @focus="$event.target.size=5" @blur="$event.target.size=1" @change="$event.target.size=1">
+              <option v-for="a in ageOptions" :key="a" :value="a">{{ a }}</option>
+            </select>
+          </label>
+          <label>入学年份 *
+            <select v-model.number="form.enrollYear" size="1" @focus="$event.target.size=5" @blur="$event.target.size=1" @change="$event.target.size=1">
+              <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+            </select>
+          </label>
         </div>
         <div class="btns">
           <button class="primary" @click="submitForm">保存</button>
