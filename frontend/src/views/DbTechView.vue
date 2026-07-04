@@ -57,12 +57,17 @@ onMounted(loadRank)
         <button :class="{ active: tab==='credit' }" @click="tab='credit'; loadCredit()">累计学分 (Tech-06)</button>
         <button :class="{ active: tab==='log' }" @click="tab='log'; loadLogs()">变更日志 (Tech-02)</button>
         <button :class="{ active: tab==='explain' }" @click="tab='explain'; loadExplain()">EXPLAIN (Tech-04/07)</button>
-      </div>
-    </section>
+     </div>
+   </section>
 
-    <section v-if="tab==='rank'" class="card">
-      <div class="row">
-        <input v-model="semesterCode" placeholder="学期编码" />
+   <section v-if="tab==='rank'" class="card">
+     <div class="row">
+        <select v-model="semesterCode">
+          <option value="">全部学期</option>
+          <option value="2023-2024-2">2023-2024-2</option>
+          <option value="2024-2025-1">2024-2025-1</option>
+          <option value="2024-2025-2">2024-2025-2</option>
+        </select>
         <button @click="loadRank">查询</button>
       </div>
       <table>
