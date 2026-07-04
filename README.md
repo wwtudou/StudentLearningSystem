@@ -15,6 +15,7 @@ StudentLearningSystem/
 │   ├── procedures.sql   # DB-Tech-01 存储过程
 │   ├── triggers.sql     # DB-Tech-02 触发器
 │   ├── grants.sql       # DB-Tech-08 用户权限
+│   ├── demo-all.sql     # DB-Tech-01~08 Navicat 集中演示
 │   └── install-all.sql  # 一键安装（SOURCE 串联）
 └── docs/             # 需求与设计文档
 ```
@@ -42,7 +43,11 @@ mysql -u root -p < triggers.sql
 mysql -u root -p < grants.sql
 ```
 
-重跑 `init-data.sql` 后请再执行 `triggers.sql`。
+重跑 `init-data.sql` 后请再执行 `triggers.sql` 与 `procedures.sql`。
+
+若 `CALL sp_enroll_course` 报 **Illegal mix of collations**，说明库表与连接排序规则不一致；请 **DROP DATABASE slms** 后按顺序重跑全部脚本（`schema.sql` 已改为 `utf8mb4_0900_ai_ci`），并重新执行 `procedures.sql`。
+
+答辩演示：Navicat 用 root **运行 SQL 文件** → `demo-all.sql`（Tech-01 含选课 CALL 示例）。
 
 若 `USE slms` 报 **1049 Unknown database**，说明 `slms` 库未创建成功，请用 root 执行，或先手动建库：
 
@@ -146,6 +151,8 @@ npm run dev
 | 06 | 窗口函数 | `/db-tech` 专业排名、累计学分 |
 | 07 | 分区表 | `audit_log` 按 academic_year 分区（`grade` 保留外键故不分区）；EXPLAIN 演示 |
 | 08 | 用户权限 | `db/grants.sql`：`db_admin` / `db_dept` / `db_teacher` / `db_student` |
+
+**Navicat 答辩演示**：用 root 执行 `db/demo-all.sql`（整文件或按 Tech-01 章节）。选课存储过程在 SP 内更新人数（Web 选课仍走触发器）。
 
 MySQL 演示账号（库级）：密码 `123456dbadmin` / `123456dbdept` / `123456dbteacher` / `123456dbstudent`
 

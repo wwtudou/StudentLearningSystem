@@ -6,33 +6,59 @@ USE slms;
 
 DROP TRIGGER IF EXISTS trg_enrollment_after_insert;
 DROP TRIGGER IF EXISTS trg_enrollment_after_delete;
+DROP TRIGGER IF EXISTS trg_grade_after_insert;
 DROP TRIGGER IF EXISTS trg_grade_after_update;
 DROP TRIGGER IF EXISTS trg_offering_prevent_count_update;
 
 DELIMITER $$
 
--- 选课后已选人数 +1（须临时允许更新 enrolled_count）
+-- 选课后已选人数 +1（Web 直接 INSERT 时生效；存储过程内设 @slms_skip_enrollment_count_trigger=1 跳过）
 CREATE TRIGGER trg_enrollment_after_insert
 AFTER INSERT ON enrollment
 FOR EACH ROW
 BEGIN
-  SET @slms_allow_count_update = 1;
-  UPDATE course_offering
-    SET enrolled_count = enrolled_count + 1
-    WHERE offering_no = NEW.offering_no;
-  SET @slms_allow_count_update = NULL;
+  IF @slms_skip_enrollment_count_trigger IS NULL THEN
+    SET @slms_allow_count_update = 1;
+    UPDATE course_offering
+      SET enrolled_count = enrolled_count + 1
+      WHERE offering_no = NEW.offering_no;
+    SET @slms_allow_count_update = NULL;
+  END IF;
 END$$
 
--- 退课后已选人数 -1
+-- 退课后已选人数 -1（存储过程退课时跳过，由 SP 自行 -1）
 CREATE TRIGGER trg_enrollment_after_delete
 AFTER DELETE ON enrollment
 FOR EACH ROW
 BEGIN
-  SET @slms_allow_count_update = 1;
-  UPDATE course_offering
-    SET enrolled_count = GREATEST(enrolled_count - 1, 0)
-    WHERE offering_no = OLD.offering_no;
-  SET @slms_allow_count_update = NULL;
+  IF @slms_skip_enrollment_count_trigger IS NULL THEN
+    SET @slms_allow_count_update = 1;
+    UPDATE course_offering
+      SET enrolled_count = GREATEST(enrolled_count - 1, 0)
+      WHERE offering_no = OLD.offering_no;
+    SET @slms_allow_count_update = NULL;
+  END IF;
+END$$
+
+-- 首次录入成绩写入 grade_change_log
+CREATE TRIGGER trg_grade_after_insert
+AFTER INSERT ON grade
+FOR EACH ROW
+BEGIN
+  INSERT INTO grade_change_log (student_no, offering_no, old_value, new_value, changed_by)
+  VALUES (
+    NEW.student_no,
+    NEW.offering_no,
+    NULL,
+    JSON_OBJECT(
+      'usual_score', NEW.usual_score,
+      'final_score', NEW.final_score,
+      'total_score', NEW.total_score,
+      'exam_type', NEW.exam_type,
+      'locked', NEW.locked
+    ),
+    USER()
+  );
 END$$
 
 -- 成绩变更写入 grade_change_log
@@ -68,7 +94,7 @@ BEGIN
   END IF;
 END$$
 
--- 禁止应用层直接篡改 enrolled_count（须由选课触发器维护）
+-- 禁止应用层直接篡改 enrolled_count（须由选课触发器或存储过程维护）
 CREATE TRIGGER trg_offering_prevent_count_update
 BEFORE UPDATE ON course_offering
 FOR EACH ROW
