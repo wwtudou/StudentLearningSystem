@@ -98,6 +98,12 @@ public class GradeService {
         if (!EXAM_TYPES.contains(type)) throw new BusinessException("考试类型不合法");
         int year = LocalDate.now().getYear();
         gradeRepository.upsert(studentNo, offeringNo, totalScore, type, year);
+      if (existing != null) {
+        SessionUser user = UserContext.requireUser();
+        String oldJson = String.format("{\"total_score\":%s,\"exam_type\":\"%s\"}", existing.getTotalScore() != null ? existing.getTotalScore().toString() : "null", existing.getExamType() != null ? existing.getExamType() : "");
+        String newJson = String.format("{\"total_score\":%s,\"exam_type\":\"%s\"}", totalScore != null ? totalScore.toString() : "null", type);
+        gradeRepository.insertGradeChangeLog(studentNo, offeringNo, oldJson, newJson, user.getUsername());
+      }
     }
 
     public void submitOffering(String offeringNo) {

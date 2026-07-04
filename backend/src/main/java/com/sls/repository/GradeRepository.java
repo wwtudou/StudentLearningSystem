@@ -150,4 +150,9 @@ public class GradeRepository {
         }
         return params;
     }
+    
+    public void insertGradeChangeLog(String studentNo, String offeringNo, String oldValue, String newValue, String changedBy) {
+        jdbc.update("INSERT INTO grade_change_log (student_no, offering_no, old_value, new_value, changed_by) VALUES (?, ?, ?, ?, ?)",
+                studentNo, offeringNo, oldValue, newValue, changedBy);
+    }
 }
