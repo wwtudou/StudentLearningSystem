@@ -32,6 +32,15 @@ const query = ref({ studentNo: '', offeringNo: '' })
 const editGradeDialogVisible = ref(false)
 const editGradeForm = ref({ studentNo: '', offeringNo: '', totalScore: null, examType: '正常' })
 const dialogEditMsg = ref('')
+const unlockConfirmVisible = ref(false)
+const unlockConfirmMsg = ref('')
+const unlockConfirmAction = ref(null)
+
+function showUnlockConfirm(msg, callback) {
+  unlockConfirmMsg.value = msg
+  unlockConfirmAction.value = callback
+  unlockConfirmVisible.value = true
+}
 
 /** 教师模式 */
 const myClasses = ref([])
@@ -152,18 +161,19 @@ async function loadTeachers() {
 }
 
 async function unlockStudentRow(studentNo, offeringNo) {
-  if (!confirm('确定解锁该生成绩？')) return
-  try {
-    const { data } = await unlockStudentGrade(studentNo, offeringNo)
-    if (data.code === 0) {
-      show('该生成绩已解锁')
-      await loadRoster()
-    } else {
-      show(data.message, true)
+  showUnlockConfirm('确定解锁该生成绩？', async () => {
+    try {
+      const { data } = await unlockStudentGrade(studentNo, offeringNo)
+      if (data.code === 0) {
+        show('该生成绩已解锁')
+        await loadRoster()
+      } else {
+        show(data.message, true)
+      }
+    } catch (e) {
+      show(e.response?.data?.message || '解锁失败', true)
     }
-  } catch (e) {
-    show(e.response?.data?.message || '解锁失败', true)
-  }
+  })
 }
 
 async function submitClass() {
@@ -180,18 +190,19 @@ async function submitClass() {
 
 async function unlockClass() {
   if (!selectedOfferingNo.value) return
-  if (!confirm('确定解锁本班成绩？解锁后可继续修改。')) return
-  try {
-    const { data } = await unlockGrades(selectedOfferingNo.value)
+  showUnlockConfirm('确定解锁本班成绩？解锁后可继续修改。', async () => {
+    try {
+      const { data } = await unlockGrades(selectedOfferingNo.value)
     if (data.code === 0) {
-      show('成绩已解锁')
-      await loadRoster()
-    } else {
-      show(data.message, true)
+        show('成绩已解锁')
+        await loadRoster()
+      } else {
+        show(data.message, true)
+      }
+    } catch (e) {
+      show(e.response?.data?.message || '解锁失败', true)
     }
-  } catch (e) {
-    show(e.response?.data?.message || '解锁失败', true)
-  }
+  })
 }
 
 async function doMakeup(row) {
@@ -487,6 +498,17 @@ watch(
         <div class="btns">
           <button class="primary" @click="saveGradeEdit">保存</button>
           <button class="secondary" @click="editGradeDialogVisible=false">取消</button>
+        </div>
+      </div>
+    </div>
+    <!-- 确认解锁弹窗 -->
+    <div v-if="unlockConfirmVisible" class="overlay" @click.self="unlockConfirmVisible=false">
+      <div class="dialog dialog-sm">
+        <h3>确认解锁</h3>
+        <p class="delete-warning">{{ unlockConfirmMsg }}</p>
+        <div class="btns" style="margin-top:16px">
+          <button class="primary" @click="unlockConfirmAction?.(); unlockConfirmVisible=false">确定</button>
+          <button class="secondary" @click="unlockConfirmVisible=false">取消</button>
         </div>
       </div>
     </div>
