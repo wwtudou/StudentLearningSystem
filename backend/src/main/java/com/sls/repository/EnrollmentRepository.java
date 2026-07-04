@@ -54,6 +54,15 @@ public class EnrollmentRepository {
                 Long.class, studentNo, offeringNo);
         return c != null && c > 0;
     }
+    
+    public boolean existsByStudentNoAndCourseCode(String studentNo, String courseCode) {
+        Long c = jdbc.queryForObject("""
+                SELECT COUNT(*) FROM enrollment e
+                JOIN course_offering o ON e.offering_no = o.offering_no
+                WHERE e.student_no = ? AND o.course_code = ?
+                """, Long.class, studentNo, courseCode);
+        return c != null && c > 0;
+    }
 
     public void insert(String studentNo, String offeringNo, boolean retake) {
         jdbc.update("""

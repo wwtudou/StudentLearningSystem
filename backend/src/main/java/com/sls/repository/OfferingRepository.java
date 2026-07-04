@@ -66,7 +66,7 @@ public class OfferingRepository {
     /** 行锁查询开课计划 */
     public Map<String, Object> findForUpdate(String offeringNo) {
         List<Map<String, Object>> list = jdbc.queryForList(
-                "SELECT offering_no, capacity, enrolled_count, status FROM course_offering WHERE offering_no=? FOR UPDATE",
+                "SELECT offering_no, course_code, capacity, enrolled_count, status FROM course_offering WHERE offering_no=? FOR UPDATE",
                 offeringNo);
         return list.isEmpty() ? null : list.get(0);
     }
