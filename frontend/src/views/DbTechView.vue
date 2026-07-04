@@ -7,7 +7,7 @@ import {
 } from '../api/dbTech'
 
 const tab = ref('rank')
-const semesterCode = ref('2025-2026-1')
+const semesterCode = ref('')
 const rankList = ref([])
 const creditList = ref([])
 const changeLogs = ref([])
