@@ -60,6 +60,12 @@ public class GradeController {
         gradeService.submitOffering(body.get("offeringNo"));
         return ApiResponse.ok("成绩已提交锁定", null);
     }
+    
+    @PostMapping("/unlock")
+    public ApiResponse<Void> unlock(@RequestBody Map<String, String> body) {
+        gradeService.unlockOffering(body.get("offeringNo"));
+        return ApiResponse.ok("成绩已解锁", null);
+    }
 
     @PostMapping("/makeup")
     public ApiResponse<Void> makeup(@RequestBody Map<String, String> body) {

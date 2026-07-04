@@ -3,14 +3,22 @@
 import { ref, computed, watch } from 'vue'
 import {
   fetchGrades, fetchMyOfferings, fetchGradeRoster,
-  saveGrade, submitGrades, arrangeMakeup, arrangeRetake
+  saveGrade, submitGrades, arrangeMakeup, arrangeRetake,
+  unlockGrades
 } from '../api/grade'
+import { fetchTeacherOptions } from '../api/teacher'
 import { useAuth } from '../composables/useAuth'
 
 const { writeAllowed, hasRole, user } = useAuth()
 const canEditGrade = computed(() => writeAllowed('grade'))
 const isStudent = computed(() => hasRole('STUDENT'))
 const isTeacher = computed(() => hasRole('TEACHER'))
+const teachers = ref([])
+const selectedTeacherNo = ref('')
+const filteredOfferings = computed(() => {
+  if (!selectedTeacherNo.value) return []
+  return myClasses.value.filter(c => c.teacherNo === selectedTeacherNo.value)
+})
 
 const msg = ref('')
 const msgType = ref('ok')
@@ -136,6 +144,28 @@ async function saveAll() {
   await loadRoster()
 }
 
+async function loadTeachers() {
+  try {
+    const { data } = await fetchTeacherOptions()
+    if (data.code === 0) teachers.value = data.data
+  } catch (_) {}
+}
+
+async function unlockStudentRow(studentNo, offeringNo) {
+  if (!confirm('确定解锁该生成绩？')) return
+  try {
+    const { data } = await unlockStudentGrade(studentNo, offeringNo)
+    if (data.code === 0) {
+      show('该生成绩已解锁')
+      await loadRoster()
+    } else {
+      show(data.message, true)
+    }
+  } catch (e) {
+    show(e.response?.data?.message || '解锁失败', true)
+  }
+}
+
 async function submitClass() {
   if (!selectedOfferingNo.value) return
   if (!confirm('提交后将锁定本班成绩，确定提交？')) return
@@ -145,6 +175,22 @@ async function submitClass() {
     await loadRoster()
   } else {
     show(data.message, true)
+  }
+}
+
+async function unlockClass() {
+  if (!selectedOfferingNo.value) return
+  if (!confirm('确定解锁本班成绩？解锁后可继续修改。')) return
+  try {
+    const { data } = await unlockGrades(selectedOfferingNo.value)
+    if (data.code === 0) {
+      show('成绩已解锁')
+      await loadRoster()
+    } else {
+      show(data.message, true)
+    }
+  } catch (e) {
+    show(e.response?.data?.message || '解锁失败', true)
   }
 }
 
@@ -201,7 +247,7 @@ async function saveGradeEdit() {
 }
 
 watch(selectedOfferingNo, () => {
-  if (isTeacher.value) loadRoster()
+  if (isTeacher.value || hasRole('SYS_ADMIN')) loadRoster()
 })
 
 watch(
@@ -209,6 +255,8 @@ watch(
   async (roles) => {
     if (roles?.includes('TEACHER')) {
       await loadMyClasses()
+    } else if (roles?.includes('SYS_ADMIN')) {
+      await Promise.all([loadTeachers(), loadMyClasses()])
     } else if (roles?.length) {
       if (user.value?.linkedNo) {
         query.value.studentNo = user.value.linkedNo
@@ -262,6 +310,7 @@ watch(
           <div class="btns" v-if="canEditGrade">
             <button @click="saveAll">保存本班</button>
             <button class="primary" @click="submitClass">提交锁定</button>
+            <button v-if="hasRole('SYS_ADMIN')" class="btn-secondary" @click="unlockClass">解锁</button>
           </div>
         </div>
         <p v-if="rosterLoading" class="muted">加载中…</p>
@@ -313,6 +362,67 @@ watch(
       </section>
     </template>
 
+    <!-- 管理员：按教师查看 -->
+    <template v-else-if="hasRole('SYS_ADMIN')">
+      <section class="card">
+        <h2>成绩管理</h2>
+        <p class="sub">先选择教师，再选择该教师所教的开课计划，查看并管理学生成绩。</p>
+        <div class="toolbar">
+          <label class="select-label">
+            <span>教师</span>
+            <select v-model="selectedTeacherNo" class="offering-select">
+              <option value="">— 请选择教师 —</option>
+              <option v-for="t in teachers" :key="t.code" :value="t.code">{{ t.name }}</option>
+            </select>
+          </label>
+          <label v-if="selectedTeacherNo" class="select-label" style="margin-top:8px">
+            <span>开课计划</span>
+            <select v-model="selectedOfferingNo" class="offering-select">
+              <option value="" disabled>— 请选择开课计划 —</option>
+              <option v-for="c in filteredOfferings" :key="c.offeringNo" :value="c.offeringNo">
+                {{ c.offeringNo }} · {{ c.courseName }}（{{ c.semesterName }}）{{ c.enrolledCount }}/{{ c.capacity }} 人
+              </option>
+            </select>
+          </label>
+        </div>
+        <div v-if="selectedClass" class="class-info">
+          <span><strong>{{ selectedClass.courseName }}</strong></span>
+          <span>{{ selectedClass.semesterName }}</span>
+          <span>{{ selectedClass.teacherName }}</span>
+          <span class="meta">{{ selectedClass.enrolledCount }}/{{ selectedClass.capacity }} 人 · {{ selectedClass.status }}</span>
+        </div>
+      </section>
+      <section v-if="selectedOfferingNo" class="card">
+        <div class="head-row">
+          <h2>{{ selectedClass?.courseName || '学生名册' }} — 学生名册</h2>
+          <div class="btns">
+            <button class="btn-secondary" @click="unlockClass">解锁全班</button>
+          </div>
+        </div>
+        <p v-if="rosterLoading" class="muted">加载中...</p>
+        <table v-else>
+          <thead>
+            <tr>
+              <th>学号</th><th>姓名</th><th>总评</th><th>类型</th><th>锁定</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="roster.length === 0"><td colspan="6" class="empty">该班暂无选课学生</td></tr>
+            <tr v-for="row in roster" :key="row.studentNo">
+              <td>{{ row.studentNo }}</td>
+              <td>{{ row.studentName }}</td>
+              <td>{{ row.totalScore ?? '—' }}</td>
+              <td>{{ row.examType || '—' }}</td>
+              <td>{{ row.locked ? '是' : '否' }}</td>
+              <td>
+                <button v-if="row.locked" class="btn-sm" @click="unlockStudentRow(row.studentNo, row.offeringNo)">解锁</button>
+                <span v-else class="tag-muted">已解锁</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </template>
     <!-- 学生 / 管理员：成绩列表 -->
     <template v-else>
       <section class="card">

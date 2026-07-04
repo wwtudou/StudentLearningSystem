@@ -104,6 +104,14 @@ public class GradeService {
         accessScope.assertTeacherOffering(offeringNo);
         gradeRepository.lockOffering(offeringNo);
     }
+    
+    public void unlockOffering(String offeringNo) {
+        SessionUser user = UserContext.requireUser();
+        if (!user.hasRole("SYS_ADMIN")) {
+            throw new ForbiddenException("仅管理员可解锁成绩");
+        }
+        gradeRepository.unlockOffering(offeringNo);
+    }
 
     public void arrangeMakeup(String studentNo, String offeringNo) {
         accessScope.assertTeacherOffering(offeringNo);

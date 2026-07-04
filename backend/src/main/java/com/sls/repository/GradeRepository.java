@@ -101,12 +101,20 @@ public class GradeRepository {
     public void lockOffering(String offeringNo) {
         jdbc.update("UPDATE grade SET locked=1 WHERE offering_no=? AND locked=0", offeringNo);
     }
+    
+    public void unlockOffering(String offeringNo) {
+        jdbc.update("UPDATE grade SET locked=0 WHERE offering_no=?", offeringNo);
+    }
 
     public void setMakeup(String studentNo, String offeringNo) {
         jdbc.update("""
                 UPDATE grade SET exam_type='补考', locked=0
                 WHERE student_no=? AND offering_no=?
                 """, studentNo, offeringNo);
+    }
+
+    public void unlockStudentGrade(String studentNo, String offeringNo) {
+        jdbc.update("UPDATE grade SET locked=0 WHERE student_no=? AND offering_no=?", studentNo, offeringNo);
     }
 
     public int deleteByEnrollment(String studentNo, String offeringNo) {
