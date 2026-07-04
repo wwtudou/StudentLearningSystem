@@ -10,7 +10,7 @@ DROP PROCEDURE IF EXISTS sp_batch_save_grades;
 
 DELIMITER $$
 
--- 选课：FOR UPDATE 行锁 + 事务，enrolled_count 由触发器维护
+-- 选课：FOR UPDATE 行锁 + 事务；人数在 SP 内更新（避免与行锁+触发器冲突）
 CREATE PROCEDURE sp_enroll_course(
   IN  p_student_no   VARCHAR(20),
   IN  p_offering_no  VARCHAR(30),
@@ -26,16 +26,35 @@ proc: BEGIN
   DECLARE v_semester     VARCHAR(20);
   DECLARE v_schedule     VARCHAR(100);
   DECLARE v_conflict     INT DEFAULT 0;
+  DECLARE v_err_msg      VARCHAR(200);
+
+  DECLARE EXIT HANDLER FOR 1062
+  BEGIN
+    ROLLBACK;
+    SET @slms_skip_enrollment_count_trigger = NULL;
+    SET @slms_allow_count_update = NULL;
+    SET p_result = 1002;
+    SET p_message = '您已选择该课程';
+  END;
 
   DECLARE EXIT HANDLER FOR SQLEXCEPTION
   BEGIN
+    GET DIAGNOSTICS CONDITION 1 v_err_msg = MESSAGE_TEXT;
     ROLLBACK;
-    SET p_result = 9999;
-    SET p_message = '系统异常，请稍后重试';
+    SET @slms_skip_enrollment_count_trigger = NULL;
+    SET @slms_allow_count_update = NULL;
+    IF p_result = 0 THEN
+      SET p_result = 9999;
+      SET p_message = CONCAT('系统异常：', LEFT(IFNULL(v_err_msg, '未知错误'), 180));
+    END IF;
   END;
 
   SET p_result = 0;
   SET p_message = '选课成功';
+  SET @slms_skip_enrollment_count_trigger = NULL;
+  -- IN 参数沿用 CALL 时的 collation，须与表字段一致（MySQL8 / Navicat 默认为 0900_ai_ci）
+  SET p_student_no = CONVERT(p_student_no USING utf8mb4) COLLATE utf8mb4_0900_ai_ci;
+  SET p_offering_no = CONVERT(p_offering_no USING utf8mb4) COLLATE utf8mb4_0900_ai_ci;
 
   START TRANSACTION;
 
@@ -46,9 +65,9 @@ proc: BEGIN
     FOR UPDATE;
 
   IF v_status IS NULL THEN
-    ROLLBACK;
     SET p_result = 1006;
     SET p_message = '开课计划不存在';
+    ROLLBACK;
     LEAVE proc;
   END IF;
 
@@ -57,23 +76,23 @@ proc: BEGIN
     WHERE student_no = p_student_no AND deleted = 0;
 
   IF v_stu_status IS NULL THEN
-    ROLLBACK;
     SET p_result = 1006;
     SET p_message = '学生不存在';
+    ROLLBACK;
     LEAVE proc;
   END IF;
 
   IF p_is_retake = 0 AND v_stu_status <> '在读' THEN
-    ROLLBACK;
     SET p_result = 1005;
     SET p_message = '当前学籍状态不允许选课';
+    ROLLBACK;
     LEAVE proc;
   END IF;
 
   IF p_is_retake = 0 AND v_status <> '开放选课' THEN
-    ROLLBACK;
     SET p_result = 1007;
     SET p_message = '该开课计划未开放选课';
+    ROLLBACK;
     LEAVE proc;
   END IF;
 
@@ -81,20 +100,19 @@ proc: BEGIN
     SELECT 1 FROM enrollment
     WHERE student_no = p_student_no AND offering_no = p_offering_no
   ) THEN
-    ROLLBACK;
     SET p_result = 1002;
     SET p_message = '您已选择该课程';
+    ROLLBACK;
     LEAVE proc;
   END IF;
 
   IF v_enrolled >= v_capacity THEN
-    ROLLBACK;
     SET p_result = 1001;
     SET p_message = '该课程已满员，请选择其他教学班';
+    ROLLBACK;
     LEAVE proc;
   END IF;
 
-  -- 同学期上课时间冲突（简化：schedule 字符串相同视为冲突）
   IF v_schedule IS NOT NULL AND v_schedule <> '' THEN
     SELECT COUNT(*) INTO v_conflict
     FROM enrollment e
@@ -104,20 +122,29 @@ proc: BEGIN
       AND o.schedule = v_schedule;
 
     IF v_conflict > 0 THEN
-      ROLLBACK;
       SET p_result = 1004;
       SET p_message = '与已选课程时间冲突';
+      ROLLBACK;
       LEAVE proc;
     END IF;
   END IF;
 
+  SET @slms_skip_enrollment_count_trigger = 1;
+  SET @slms_allow_count_update = 1;
+  UPDATE course_offering
+    SET enrolled_count = enrolled_count + 1
+    WHERE offering_no = p_offering_no;
+  SET @slms_allow_count_update = NULL;
+
   INSERT INTO enrollment (student_no, offering_no, enroll_time, is_retake)
   VALUES (p_student_no, p_offering_no, NOW(), p_is_retake);
+
+  SET @slms_skip_enrollment_count_trigger = NULL;
 
   COMMIT;
 END proc$$
 
--- 退课：删除选课记录，enrolled_count 由触发器 -1
+-- 退课：删除选课记录；人数在 SP 内 -1
 CREATE PROCEDURE sp_drop_course(
   IN  p_student_no   VARCHAR(20),
   IN  p_offering_no  VARCHAR(30),
@@ -126,16 +153,25 @@ CREATE PROCEDURE sp_drop_course(
 )
 proc: BEGIN
   DECLARE v_status VARCHAR(20);
+  DECLARE v_err_msg VARCHAR(200);
 
   DECLARE EXIT HANDLER FOR SQLEXCEPTION
   BEGIN
+    GET DIAGNOSTICS CONDITION 1 v_err_msg = MESSAGE_TEXT;
     ROLLBACK;
-    SET p_result = 9999;
-    SET p_message = '系统异常，请稍后重试';
+    SET @slms_skip_enrollment_count_trigger = NULL;
+    SET @slms_allow_count_update = NULL;
+    IF p_result = 0 THEN
+      SET p_result = 9999;
+      SET p_message = CONCAT('系统异常：', LEFT(IFNULL(v_err_msg, '未知错误'), 180));
+    END IF;
   END;
 
   SET p_result = 0;
   SET p_message = '退课成功';
+  SET @slms_skip_enrollment_count_trigger = NULL;
+  SET p_student_no = CONVERT(p_student_no USING utf8mb4) COLLATE utf8mb4_0900_ai_ci;
+  SET p_offering_no = CONVERT(p_offering_no USING utf8mb4) COLLATE utf8mb4_0900_ai_ci;
 
   START TRANSACTION;
 
@@ -145,16 +181,16 @@ proc: BEGIN
     FOR UPDATE;
 
   IF v_status IS NULL THEN
-    ROLLBACK;
     SET p_result = 1006;
     SET p_message = '开课计划不存在';
+    ROLLBACK;
     LEAVE proc;
   END IF;
 
   IF v_status IN ('已结束', '草稿') THEN
-    ROLLBACK;
     SET p_result = 1008;
     SET p_message = '当前不在退课期内';
+    ROLLBACK;
     LEAVE proc;
   END IF;
 
@@ -162,17 +198,26 @@ proc: BEGIN
     SELECT 1 FROM enrollment
     WHERE student_no = p_student_no AND offering_no = p_offering_no
   ) THEN
-    ROLLBACK;
     SET p_result = 1009;
     SET p_message = '未找到选课记录';
+    ROLLBACK;
     LEAVE proc;
   END IF;
 
   DELETE FROM grade
     WHERE student_no = p_student_no AND offering_no = p_offering_no;
 
+  SET @slms_skip_enrollment_count_trigger = 1;
+  SET @slms_allow_count_update = 1;
+  UPDATE course_offering
+    SET enrolled_count = GREATEST(enrolled_count - 1, 0)
+    WHERE offering_no = p_offering_no;
+  SET @slms_allow_count_update = NULL;
+
   DELETE FROM enrollment
     WHERE student_no = p_student_no AND offering_no = p_offering_no;
+
+  SET @slms_skip_enrollment_count_trigger = NULL;
 
   COMMIT;
 END proc$$
@@ -194,18 +239,21 @@ proc: BEGIN
   DECLARE v_total   DECIMAL(5,2);
   DECLARE v_locked  TINYINT;
   DECLARE v_year    INT DEFAULT YEAR(CURDATE());
+  DECLARE v_err_msg VARCHAR(200);
 
   DECLARE EXIT HANDLER FOR SQLEXCEPTION
   BEGIN
+    GET DIAGNOSTICS CONDITION 1 v_err_msg = MESSAGE_TEXT;
     ROLLBACK;
     SET p_result = 9999;
-    SET p_message = '批量保存失败';
+    SET p_message = CONCAT('批量保存失败：', LEFT(IFNULL(v_err_msg, '未知错误'), 180));
     SET p_count = 0;
   END;
 
   SET p_result = 0;
   SET p_count = 0;
   SET p_message = '保存成功';
+  SET p_offering_no = CONVERT(p_offering_no USING utf8mb4) COLLATE utf8mb4_0900_ai_ci;
   SET v_len = JSON_LENGTH(p_grades_json);
 
   IF v_len IS NULL OR v_len = 0 THEN

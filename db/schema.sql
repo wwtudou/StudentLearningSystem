@@ -7,13 +7,13 @@
 -- 1. 在 MySQL 客户端中「运行整个脚本」，不要只选中部分语句
 -- 2. 须先执行本文件 schema.sql，再执行 init-data.sql
 -- 3. 若 USE slms 报 1049：说明建库失败，请用 root 登录，或先手动执行：
---      CREATE DATABASE slms DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+--      CREATE DATABASE slms DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 -- 4. 若报权限错误，请为当前用户授予 CREATE 权限
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS slms
   DEFAULT CHARACTER SET utf8mb4
-  DEFAULT COLLATE utf8mb4_unicode_ci;
+  DEFAULT COLLATE utf8mb4_0900_ai_ci;
 
 USE slms;
 
